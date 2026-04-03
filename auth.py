@@ -7,8 +7,8 @@ from fastapi.security import HTTPBearer
 oauth2_scheme = HTTPBearer()
 
 
-
 SECRET_KEY = "boohoo nigga"
+
 
 ALGORITHM = "HS256"
 
