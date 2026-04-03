@@ -10,10 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth import hash_password, verify_password, create_access_token, get_current_user
 import os, uvicorn
 
-models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+models.Base.metadata.create_all(bind=engine)
 @app.get("/")
 def root():
     return {"message": "API is running"}
