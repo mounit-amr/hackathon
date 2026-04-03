@@ -34,3 +34,17 @@ class AuditLog(Base):
     timestamp = Column(DateTime, server_default=func.now())
     affected_count = Column(Integer, default=1) # Track how many entries were impacted
     is_anomaly = Column(Integer, default=0) #security flagged
+    
+class MaintenanceSchedule(Base):
+    __tablename__ = "maintenance_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    asset_id = Column(Integer)
+    asset_name = Column(String)
+    scheduled_date = Column(String)
+    maintenance_type = Column(String)  # ROUTINE, EMERGENCY, INSPECTION
+    assigned_to = Column(String)
+    status = Column(String, default="PENDING")  # PENDING, IN_PROGRESS, COMPLETED
+    priority = Column(String, default="MEDIUM")  # LOW, MEDIUM, HIGH, CRITICAL
+    notes = Column(String, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())

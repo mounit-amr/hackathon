@@ -1,16 +1,20 @@
-# audit.py
 from sqlalchemy.orm import Session
 import models
+from main import manager 
 
-def log_action(db: Session, user: str, action: str, resource: str, details: str, 
+async def log_action(db: Session, user: str, action: str, resource: str, details: str, 
                affected_count: int = 1, resource_id: int = None, ip: str = "unknown"):
     
     is_anomaly = 0
-    # Threshold logic: if more than 100 entries are deleted at once
-    if action == "DELETE" and affected_count > 100:
+    if action == "DELETE" and affected_count > 10: 
         is_anomaly = 1
-        # Block the user in the database
         db.query(models.Personnel).filter(models.Personnel.username == user).update({"is_blocked": 1})
+        
+        await manager.broadcast({
+            "type": "FORCE_LOGOUT",
+            "user": user,
+            "reason": f"CRITICAL: Mass {action} detected ({affected_count} items)."
+        })
     
     log = models.AuditLog(
         user=user,

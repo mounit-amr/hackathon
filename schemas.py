@@ -52,3 +52,26 @@ class AuditLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+class MaintenanceCreate(BaseModel):
+    asset_id: int
+    asset_name: str
+    scheduled_date: str
+    maintenance_type: str
+    assigned_to: str
+    priority: Optional[str] = "MEDIUM"
+    notes: Optional[str] = None
+
+class MaintenanceResponse(BaseModel):
+    id: int
+    asset_id: int
+    asset_name: str
+    scheduled_date: str
+    maintenance_type: str
+    assigned_to: str
+    status: str
+    priority: str
+    notes: Optional[str]
+
+    class Config:
+        from_attributes = True
