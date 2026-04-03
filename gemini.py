@@ -1,5 +1,5 @@
-from groq import Groq
 import os
+from groq import Groq
 
 system_prompt = """
 You are a helpful AI assistant for this application.

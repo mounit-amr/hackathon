@@ -14,6 +14,18 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+@app.get("/")
+def root():
+    return {"message": "API is running"}
+
+@app.get("/chat")
+def chat(prompt: str):
+    return {"response": generate_response(prompt)}
+
+@app.get("/test")
+def test():
+    return {"status" : "working"}
+
 @app.post("/items", response_model=ItemResponse)
 def create_item(item: ItemCreate, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
     new_item = models.Item(
