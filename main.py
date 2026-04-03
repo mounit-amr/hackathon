@@ -13,8 +13,10 @@ import os, uvicorn
 
 app = FastAPI()
 
-models.Base.metadata.create_all(bind=engine)
-@app.get("/")
+@app.on_event("startup")
+def startup():
+    models.Base.metadata.create_all(bind=engine@app.get("/"))
+    
 def root():
     return {"message": "API is running"}
 
