@@ -12,6 +12,8 @@ import os, uvicorn
 from contextlib import asynccontextmanager
 from audit import log_action
 from fastapi import Request
+from fastapi import WebSocket, WebSocketDisconnect
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -176,14 +178,21 @@ def get_stats(db: Session = Depends(get_db)):
         "inactive_items": total - active
     }
 
-# Update status only
 @app.patch("/items/{id}/status")
-def update_status(id: int, status: str, db: Session = Depends(get_db)):
+async def update_status(id: int, status: str, db: Session = Depends(get_db)):
     item = db.query(models.Item).filter(models.Item.id == id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
+    
     item.status = status
     db.commit()
+ 
+    await manager.broadcast({
+        "item_id": id,
+        "new_status": status,
+        "type": "STATUS_UPDATE"
+    })
+    
     return {"message": f"Status updated to {status}"}
 
 # Health check
@@ -288,4 +297,31 @@ def bulk_delete(ids: list[int], request: Request, db: Session = Depends(get_db),
         return {"message": "Action flagged. User has been blocked for security."}
     
     return {"message": f"Successfully deleted {count} items"}
+
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/tracking")
+async def websocket_tracking(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 #this is after the ending

@@ -1,5 +1,8 @@
 import os
 from groq import Groq
+from dotenv import load_dotenv
+
+load_dotenv()
 
 system_prompt = """
 You are a helpful AI assistant for this application.

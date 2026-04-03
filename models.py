@@ -10,6 +10,7 @@ class Item(Base):
     description = Column(Text)
     status = Column(String, default="active")
     category = Column(String, nullable=True)
+    location = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     
 class Personnel(Base):
