@@ -9,12 +9,12 @@ If asked anything unrelated respond with:
 """
 
 def generate_response(prompt: str) -> str:
-    api_key = os.getenv("GROQ_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY", "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")
 
     if not api_key:
         raise ValueError("GROQ_API_KEY not found")
 
-    client = Groq(api_key=api_key)
+    client = Groq(api_key= "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")
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
