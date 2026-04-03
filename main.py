@@ -8,6 +8,7 @@ from schemas import ItemCreate, ItemUpdate, ItemResponse, PersonnelCreate, Login
 from gemini import generate_response
 from fastapi.middleware.cors import CORSMiddleware
 from auth import hash_password, verify_password, create_access_token, get_current_user
+import os, uvicorn
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -106,7 +107,6 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         "role": user.role
     })
 
-    # Return token to user
     return {"access_token": token, "token_type": "bearer"}
 
 @app.post("/ai/chat")
@@ -199,3 +199,8 @@ def delete_item(id: int, db: Session = Depends(get_db), current_user: str = Depe
     db.delete(item)
     db.commit()
     return {"message": f"Item {id} deleted"}
+
+#this is after the ending
+if __name__ == "__main__":
+    port =  int(os.environ.get("PORT",8000))
+    uvicorn.run("main:app",host="0.0.0.0", port=port)
