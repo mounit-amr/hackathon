@@ -22,7 +22,10 @@ def root():
 
 @app.get("/chat")
 def chat(prompt: str):
-    return {"response": generate_response(prompt)}
+    try:
+        return {"response": generate_response(prompt)}
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/test")
 def test():
