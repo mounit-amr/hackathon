@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth import hash_password, verify_password, create_access_token, get_current_user
 import os, uvicorn
 from contextlib import asynccontextmanager
+from audit import log_action
+from fastapi import Request
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -221,4 +223,47 @@ def delete_item(id: int, db: Session = Depends(get_db), current_user: str = Depe
     db.commit()
     return {"message": f"Item {id} deleted"}
 
+
+
+# Get all audit logs
+@app.get("/audit/logs")
+def get_audit_logs(db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+    return db.query(models.AuditLog).order_by(
+        models.AuditLog.timestamp.desc()
+    ).all()
+
+# Get logs for specific resource
+@app.get("/audit/logs/{resource}")
+def get_resource_logs(resource: str, db: Session = Depends(get_db)):
+    return db.query(models.AuditLog).filter(
+        models.AuditLog.resource == resource
+    ).all()
+
+@app.post("/missions")
+def create_mission(
+    mission: ItemCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    new_mission = models.Item(
+        name=mission.name,
+        description=mission.description
+    )
+    db.add(new_mission)
+    db.commit()
+    db.refresh(new_mission)
+
+    # Log the action
+    log_action(
+        db=db,
+        user=current_user,
+        action="CREATE",
+        resource="mission",
+        resource_id=new_mission.id,
+        details=f"Mission {mission.name} created",
+        ip=request.client.host
+    )
+
+    return new_mission
 #this is after the ending

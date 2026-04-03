@@ -18,3 +18,15 @@ class Personnel(Base):
     username = Column(String, unique=True)
     password = Column(String)
     role = Column(String, default="user")
+    
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user = Column(String)
+    action = Column(String)
+    resource = Column(String)
+    resource_id = Column(Integer, nullable=True)
+    details = Column(String)
+    ip_address = Column(String)
+    timestamp = Column(DateTime, server_default=func.now())

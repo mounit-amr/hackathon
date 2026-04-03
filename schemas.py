@@ -39,3 +39,16 @@ class Token(BaseModel):
     
 class ChatRequest(BaseModel):
     message: str
+    
+class AuditLogResponse(BaseModel):
+    id: int
+    user: str
+    action: str
+    resource: str
+    resource_id: Optional[int]
+    details: str
+    ip_address: str
+    timestamp: str
+
+    class Config:
+        from_attributes = True
