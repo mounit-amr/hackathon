@@ -9,13 +9,17 @@ from gemini import generate_response
 from fastapi.middleware.cors import CORSMiddleware
 from auth import hash_password, verify_password, create_access_token, get_current_user
 import os, uvicorn
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    models.Base.metadata.create_all(bind=engine)
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 
-app = FastAPI()
-
-@app.on_event("startup")
-def startup():
-    models.Base.metadata.create_all(bind=engine@app.get("/"))
+# app = FastAPI()
     
 def root():
     return {"message": "API is running"}
