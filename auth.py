@@ -4,6 +4,9 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.security import HTTPBearer
+from sqlalchemy.orm import Session  # To identify the 'Session' type
+import models                       # To identify 'models.Personnel'
+from database import get_db          # If you need to use the database dependency
 oauth2_scheme = HTTPBearer()
 
 
@@ -40,15 +43,20 @@ def verify_token(token: str):
         # If token is invalid or expired — return None
         return None
 
-# Tells FastAPI to look for token in Authorization header
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     username = verify_token(token.credentials)
     if username is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Check if user is blocked in the DB
+    user = db.query(models.Personnel).filter(models.Personnel.username == username).first()
+    if user and hasattr(user, 'is_blocked') and user.is_blocked == 1:
         raise HTTPException(
-            status_code=401,
-            detail="Invalid or expired token"
+            status_code=403,
+            detail="Account blocked due to suspicious activity"
         )
+        
     return username
 # This function protects any route you add it to
 # def get_current_user(token: str = Depends(oauth2_scheme)):

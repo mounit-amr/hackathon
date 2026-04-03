@@ -266,4 +266,26 @@ def create_mission(
     )
 
     return new_mission
+
+@app.delete("/items/bulk")
+def bulk_delete(ids: list[int], request: Request, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+    count = len(ids)
+    
+    # Perform deletion...
+    
+    # Log and check for anomaly
+    was_blocked = log_action(
+        db=db,
+        user=current_user,
+        action="DELETE",
+        resource="items",
+        details=f"Attempted bulk delete of {count} items",
+        affected_count=count,
+        ip=request.client.host
+    )
+    
+    if was_blocked:
+        return {"message": "Action flagged. User has been blocked for security."}
+    
+    return {"message": f"Successfully deleted {count} items"}
 #this is after the ending

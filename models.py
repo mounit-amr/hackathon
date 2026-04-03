@@ -18,6 +18,7 @@ class Personnel(Base):
     username = Column(String, unique=True)
     password = Column(String)
     role = Column(String, default="user")
+    is_blocked = Column(Integer, default=0)
     
 class AuditLog(Base):
     __tablename__ = "audit_logs"
@@ -30,3 +31,5 @@ class AuditLog(Base):
     details = Column(String)
     ip_address = Column(String)
     timestamp = Column(DateTime, server_default=func.now())
+    affected_count = Column(Integer, default=1) # Track how many entries were impacted
+    is_anomaly = Column(Integer, default=0) #security flagged
