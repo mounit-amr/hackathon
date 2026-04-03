@@ -214,5 +214,5 @@ def delete_item(id: int, db: Session = Depends(get_db), current_user: str = Depe
 
 #this is after the ending
 if __name__ == "__main__":
-    port =  int(os.environ.get("PORT",8000))
+    port =  int(os.environ["PORT"])
     uvicorn.run(app, host="0.0.0.0", port=port)
