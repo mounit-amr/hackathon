@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 import models
-from main import manager 
 
 async def log_action(db: Session, user: str, action: str, resource: str, details: str, 
                affected_count: int = 1, resource_id: int = None, ip: str = "unknown"):

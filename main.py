@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException,   status
 from sqlalchemy.orm import Session
-from database import get_db, engine
-import models,schemas, auth
+from database import get_db,engine
+import models,schemas,auth
 from schemas import ItemCreate, ItemUpdate, ItemResponse, MaintenanceResponse, MaintenanceCreate
 from auth import hash_password, verify_password, create_access_token
 from schemas import ItemCreate, ItemUpdate, ItemResponse, PersonnelCreate, LoginRequest,ChatRequest
@@ -340,10 +340,19 @@ async def websocket_tracking(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+@app.websocket("/ws/maintenance")
+async def websocket_maintenance(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
         
 # Schedule maintenance
 @app.post("/maintenance", response_model=MaintenanceResponse)
-def schedule_maintenance(
+async def schedule_maintenance(
     maintenance: MaintenanceCreate,
     request: Request,
     db: Session = Depends(get_db),
@@ -371,6 +380,22 @@ def schedule_maintenance(
         details=f"Maintenance scheduled for {maintenance.asset_name}",
         ip=request.client.host
     )
+
+    try:
+        await manager.broadcast({
+            "type": "maintenance_update",
+            "maintenanceId": new_schedule.id,
+            "assetId": new_schedule.asset_id,
+            "assetName": new_schedule.asset_name,
+            "status": new_schedule.status,
+            "scheduledDate": new_schedule.scheduled_date,
+            "maintenanceType": new_schedule.maintenance_type,
+            "assignedTo": new_schedule.assigned_to,
+            "priority": new_schedule.priority,
+            "notes": new_schedule.notes
+        })
+    except Exception:
+        pass
 
     return new_schedule
 
@@ -416,26 +441,82 @@ def update_maintenance_status(
     return {"message": f"Maintenance status updated to {status}"}
 
 # AI maintenance recommendation
-@app.post("/maintenance/ai-recommend")
-def ai_maintenance_recommend(
-    asset_name: str,
-    last_maintenance: str,
-    usage_hours: int,
-    db: Session = Depends(get_db)
+# @app.post("/maintenance/ai-recommend")
+# def ai_maintenance_recommend(
+#     asset_name: str,
+#     last_maintenance: str,
+#     usage_hours: int,
+#     db: Session = Depends(get_db)
+# ):
+#     prompt = f"""
+#     Asset: {asset_name}
+#     Last maintenance: {last_maintenance}
+#     Usage hours since last maintenance: {usage_hours}
+    
+#     Based on this information:
+#     1. Should this asset be scheduled for maintenance?
+#     2. What type of maintenance is recommended?
+#     3. What is the priority level?
+#     4. What specific checks should be performed?
+    
+#     Respond in a structured format.
+#     """
+#     recommendation = generate_response(prompt)
+#     return {"recommendation": recommendation}
+
+# from fastapi import APIRouter, Depends, HTTPException, Request
+# from sqlalchemy.orm import Session
+# import models, schemas, auth, audit
+# from database import get_db
+
+@app.post("/api/update-maintenance")
+async def update_maintenance(
+    payload: schemas.MaintenanceUpdate, 
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
-    prompt = f"""
-    Asset: {asset_name}
-    Last maintenance: {last_maintenance}
-    Usage hours since last maintenance: {usage_hours}
-    
-    Based on this information:
-    1. Should this asset be scheduled for maintenance?
-    2. What type of maintenance is recommended?
-    3. What is the priority level?
-    4. What specific checks should be performed?
-    
-    Respond in a structured format.
-    """
-    recommendation = generate_response(prompt)
-    return {"recommendation": recommendation}
+    # 1. Check if the user is an Admin/Major
+    user_record = db.query(models.Personnel).filter(models.Personnel.username == current_user).first()
+    if user_record.role not in ['admin', 'major']:
+        raise HTTPException(status_code=403, detail="Insufficient Rank for maintenance updates")
+
+    # 2. Find the maintenance schedule by its schedule ID
+    schedule = db.query(models.MaintenanceSchedule).filter(models.MaintenanceSchedule.id == payload.taskId).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Maintenance target schedule not found")
+
+    # 3. Apply updates to the maintenance schedule
+    schedule.asset_name = payload.taskName
+    schedule.status = payload.taskStatus
+    db.commit()
+
+    # 4. Log the maintenance task in the AuditLog
+    await audit.log_action(
+        db=db,
+        user=current_user,
+        action="MAINTENANCE",
+        resource="MaintenanceSchedule",
+        resource_id=payload.taskId,
+        details=f"Task: {payload.taskName} | New Status: {payload.taskStatus}",
+        ip=request.client.host
+    )
+
+    try:
+        await manager.broadcast({
+            "type": "maintenance_update",
+            "maintenanceId": schedule.id,
+            "assetId": schedule.asset_id,
+            "assetName": schedule.asset_name,
+            "status": schedule.status,
+            "scheduledDate": schedule.scheduled_date,
+            "maintenanceType": schedule.maintenance_type,
+            "assignedTo": schedule.assigned_to,
+            "priority": schedule.priority,
+            "notes": schedule.notes
+        })
+    except Exception:
+        pass
+
+    return {"message": "Maintenance task synchronized successfully"}
 #this is after the ending

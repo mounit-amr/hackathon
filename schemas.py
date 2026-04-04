@@ -36,6 +36,7 @@ class LoginRequest(BaseModel):
 class Token(BaseModel):
     access_token: str  # the JWT token
     token_type: str    # always "bearer"
+    role: str
     
 class ChatRequest(BaseModel):
     message: str
@@ -75,3 +76,9 @@ class MaintenanceResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+# Add this to schemas.py
+class MaintenanceUpdate(BaseModel):
+    taskId: int
+    taskName: str
+    taskStatus: str

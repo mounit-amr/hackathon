@@ -63,7 +63,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return username
 
 # Use this as a dependency for Admin-only features
-def verify_admin_access(current_user: models.Personnel = Depends(auth.get_current_user)):
+def verify_admin_access(current_user: models.Personnel = Depends(get_current_user)):
     if current_user.role not in ['admin']:
         raise HTTPException(
             status_code=403, 
@@ -73,7 +73,7 @@ def verify_admin_access(current_user: models.Personnel = Depends(auth.get_curren
 
 def require_admin(current_user: models.Personnel = Depends(get_current_user)):
     # Check if the user's role is 'admin' or 'major'
-    if current_user.role not in ['admin', 'major']:
+    if current_user.role not in ['admin']:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="INSUFFICIENT RANK: Command authority required."
