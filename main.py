@@ -399,7 +399,7 @@ async def schedule_maintenance(
 
     return new_schedule
 
-# Get all maintenance schedules
+# Get all maintenance schedules yello ji a update for green dot in github
 @app.get("/maintenance")
 def get_maintenance(db: Session = Depends(get_db)):
     return db.query(models.MaintenanceSchedule).order_by(
