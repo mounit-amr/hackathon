@@ -468,6 +468,7 @@ def update_maintenance_status(
 # from sqlalchemy.orm import Session
 # import models, schemas, auth, audit
 # from database import get_db
+#setting up the environment and saving it to git and making another count in github 
 
 @app.post("/api/update-maintenance")
 async def update_maintenance(
